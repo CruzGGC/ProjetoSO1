@@ -1,14 +1,13 @@
-mkdir -p $HOME/.protecao
-
 case "$1" in
   "-p")
     db_path="$HOME/.protecao"
-    if [ -f "$db_path/ProtecaoDB.txt" ] ; then
-	rm -f "$db_path/ProtecaoDB.txt"
-    fi
     if [[ "$3" = "-f" ]]; then
       db_path="$4"
       mkdir -p $db_path
+    fi
+
+    if [ -f "$db_path/ProtecaoDB.txt" ] ; then
+      rm -f "$db_path/ProtecaoDB.txt"
     fi
 
     > $db_path/ProtecaoDB.txt
@@ -17,12 +16,22 @@ case "$1" in
     chmod 444 $db_path/ProtecaoDB.txt
     ;;
   "-v")
-    ls -lat $2 > $HOME/.protecao/VerificacaoDB.txt
+    db_path="$HOME/.protecao"
+    if [[ "$3" = "-f" ]]; then
+      db_path="$4"
+    fi
 
-    if diff -q $HOME/.protecao/ProtecaoDB.txt $HOME/.protecao/VerificacaoDB.txt >/dev/null ; then
+    if [ ! -f "$db_path/ProtecaoDB.txt" ] ; then
+      printf "Não foi encontrado ProtecaoDB.txt neste diretorio em especifico.\n"
+      exit 1
+    fi
+
+    ls -lat $2 > $db_path/VerificacaoDB.txt
+
+    if diff -q $db_path/ProtecaoDB.txt $db_path/VerificacaoDB.txt >/dev/null ; then
       printf "Não houve modificação dos ficheiros\n"
     else
-      diff $HOME/.protecao/ProtecaoDB.txt $HOME/.protecao/VerificacaoDB.txt | awk '/rw-rw/ {print $0}' | sort -k 10 > $HOME/.protecao/Diff.txt
+      diff $db_path/ProtecaoDB.txt $db_path/VerificacaoDB.txt | awk '/rw-rw/ {print $0}' | sort -k 10 > $db_path/Diff.txt
 
       while read -r -a line
       do
@@ -30,7 +39,7 @@ case "$1" in
         printf "Informacao Inicial: Utilizador: ${line[3]} | Grupo: ${line[4]} | Tamanho: ${line[5]} | Permissoes: ${line[1]} | Tempo Modificacao: ${line[6]} ${line[7]} ${line[8]} |\n"
         read -r -a line
         printf "Informacao Modificada: Utilizador: ${line[3]} | Grupo: ${line[4]} | Tamanho: ${line[5]} | Permissoes: ${line[1]} | Tempo Modificacao: ${line[6]} ${line[7]} ${line[8]} |\n"
-      done < $HOME/.protecao/Diff.txt
+      done < $db_path/Diff.txt
     fi
     ;;
   *)
